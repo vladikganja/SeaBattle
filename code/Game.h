@@ -21,6 +21,9 @@ private:
 public:
     PauseTable();
     void show(sf::RenderWindow& window);
+    std::vector<std::shared_ptr<Button>> get_buttons() {
+        return buttons;
+    }
 };
 
 class Game {
@@ -47,6 +50,12 @@ private:
     bool ship_are_placed;
     bool click;
 
+    sf::Text score_first_player;
+    sf::Text score_second_player;
+    sf::Text timer;
+    sf::Text whose_turn;
+    sf::Text total_score;
+
 public:
     Game(size_t field_size);
 
@@ -62,4 +71,5 @@ public:
     void check_click(sf::Vector2i mouse_pos);
     void check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field, 
                     std::vector<std::shared_ptr<Tile>>& ships, int number);
+    bool check_win(std::vector<std::shared_ptr<Tile>>& ships);
 };
