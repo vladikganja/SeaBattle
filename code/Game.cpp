@@ -83,13 +83,9 @@ ViewMode Game::ShipRedactorLoop(sf::RenderWindow& window) {
                 }
                 start->turn_off();
             }
-
-            if (first_field.get_coord().contains({ static_cast<float>(sf::Mouse::getPosition(window).x),
-                                                   static_cast<float>(sf::Mouse::getPosition(window).y) })) {
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-
-                }
-            }
+        }
+        else {
+            to_return = Button::check_buttons(sf::Mouse::getPosition(window), pause_table.get_buttons());
         }
 
         if (event.type == sf::Event::Closed)
@@ -127,10 +123,25 @@ ViewMode Game::MainLoop(sf::RenderWindow& window) {
 
             check_dead(first_field.get_field(), first_field.get_ships(), 1);
             check_dead(second_field.get_field(), second_field.get_ships(), 2);
+
+            if (check_win(first_field.get_ships())) {
+                std::cout << "Player 2 wins!\n";
+                pause = true;
+            }
+
+            if (check_win(second_field.get_ships())) {
+                std::cout << "Player 1 wins!\n";
+                pause = true;
+            }
+        }
+        else {
+            to_return = Button::check_buttons(sf::Mouse::getPosition(window), pause_table.get_buttons());
         }
 
         if (event.type == sf::Event::Closed)
             to_return = ViewMode::EXIT;
+
+        check_event(event);
         render_game(window, GameState::MAINLOOP);
     }
 
@@ -143,7 +154,7 @@ ViewMode Game::GameOverLoop(sf::RenderWindow& window) {
 }
 
 void Game::render_game(sf::RenderWindow& window, GameState state) {
-    window.clear(sf::Color(105, 105, 105));
+    window.clear(sf::Color(110, 110, 110));
 
     switch (state) {
     case GameState::SHIPREDACTOR:
@@ -242,6 +253,9 @@ void Game::check_click(sf::Vector2i _mouse_pos) {
                     case Status::SHIP:
                         second_field.get_field()[i][j]->change_status(Status::HURT);
                         break;
+                    default:
+                        click = false;
+                        break;
                     }
                 }
             }
@@ -296,14 +310,32 @@ void Game::check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field,
     }
 }
 
+bool Game::check_win(std::vector<std::shared_ptr<Tile>>& ships) {
+    for (auto& el : ships) {
+        if (el->get_status() != Status::DEAD) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// PAUSE TABLE ////////////////////////////////////////////////////////////////////////////////////
+
 PauseTable::PauseTable() : to_game(new Button("Back to game", { 700.f, 300.f }, ViewMode::PLAY)),
 exit(new Button("Defeat and quit", { 700.f, 340.f }, ViewMode::EXIT)) {
-    bg.setFillColor(sf::Color(203, 252, 255));
-    bg.setPosition({ 600.f, 250.f });
-    bg.setSize({ 500.f, 250.f });
+    bg.setFillColor(Tile::GRAY);
+    bg.setPosition({ 500.f, 220.f });
+    bg.setSize({ 600.f, 280.f });
 
-    to_game->get_text().setCharacterSize(30);
-    exit->get_text().setCharacterSize(30);
+    to_game->get_text().setCharacterSize(60);
+    to_game->set_size({560.f, 110.f});
+    to_game->get_rect().setPosition({520.f, 240.f});
+    to_game->get_text().setPosition({630.f, 250.f});
+
+    exit->get_text().setCharacterSize(60);
+    exit->set_size({ 560.f, 110.f });
+    exit->get_rect().setPosition({520.f, 370.f});
+    exit->get_text().setPosition({600.f, 380.f});
 
     buttons.push_back(to_game);
     buttons.push_back(exit);
