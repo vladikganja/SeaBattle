@@ -129,6 +129,7 @@ void Field::reset() {
             field[i][j]->change_status(Status::VOID, false);
         }
     }
+    ships.clear();
 }
 
 void Field::generate(size_t size, bool side) {

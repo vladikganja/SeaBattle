@@ -1,7 +1,7 @@
 #include "Game.h"
 
-Game::Game(size_t field_size) : random_placement(new Button("Random placement", {900.f, 50.f}, ViewMode::NONE)),
-                                start(new Button ("Drown them all!!!", {900.f, 570.f}, ViewMode::PLAY)) {
+Game::Game(size_t field_size) : random_placement(new Button("Random placement", { 900.f, 50.f }, ViewMode::NONE)),
+start(new Button("Drown them all!!!", { 900.f, 570.f }, ViewMode::PLAY)) {
     if (field_size < 10) {
         field_size = 10;
     }
@@ -47,6 +47,7 @@ Game::Game(size_t field_size) : random_placement(new Button("Random placement", 
 
     pause = false;
     ship_are_placed = false;
+    click = false;
     first_field.generate(field_size, false);
     second_field.generate(field_size, true);
 }
@@ -109,12 +110,23 @@ ViewMode Game::MainLoop(sf::RenderWindow& window) {
     sf::Event event;
     window.pollEvent(event);
     event.type = sf::Event::GainedFocus;
+    while (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        continue;
+    }
 
     while (to_return == ViewMode::NONE) {
         window.pollEvent(event);
 
         if (!pause) {
+            bool old_click = click;
             check_click(sf::Mouse::getPosition(window));
+
+            if (!old_click && click) {
+                AI::make_turn(first_field.get_field());
+            }
+
+            check_dead(first_field.get_field(), first_field.get_ships(), 1);
+            check_dead(second_field.get_field(), second_field.get_ships(), 2);
         }
 
         if (event.type == sf::Event::Closed)
@@ -177,6 +189,8 @@ ViewMode Game::Run(sf::RenderWindow& window) {
     ViewMode to_return = ViewMode::NONE;
 
     while (true) {
+        AI::reset();
+
         to_return = ShipRedactorLoop(window);
 
         if (to_return != ViewMode::NONE && to_return != ViewMode::PLAY)
@@ -209,12 +223,18 @@ void Game::check_event(sf::Event& event) {
 }
 
 void Game::check_click(sf::Vector2i _mouse_pos) {
+    if (click && !sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        click = false;
+        return;
+    }
+
     sf::Vector2f mouse_pos = { static_cast<float>(_mouse_pos.x), static_cast<float>(_mouse_pos.y) };
     for (int i = 0; i < second_field.get_field().size(); i++) {
         for (int j = 0; j < second_field.get_field()[i].size(); j++) {
             auto coord = second_field.get_field()[i][j]->get_coord();
             if (coord.contains(mouse_pos)) {
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+                if (!click && sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+                    click = true;
                     switch (second_field.get_field()[i][j]->get_status()) {
                     case Status::VOID:
                         second_field.get_field()[i][j]->change_status(Status::MISS);
@@ -227,8 +247,11 @@ void Game::check_click(sf::Vector2i _mouse_pos) {
             }
         }
     }
+}
 
-    for (auto& tile : second_field.get_ships()) {
+void Game::check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field,
+    std::vector<std::shared_ptr<Tile>>& ships, int number) {
+    for (auto& tile : ships) {
         if (tile->get_status() == Status::DEAD) {
             continue;
         }
@@ -237,8 +260,16 @@ void Game::check_click(sf::Vector2i _mouse_pos) {
         bool dead = true;
         auto dir = tile->get_dir();
         auto len = tile->get_len();
-        int line = static_cast<int>((tile->get_id() - field_size * field_size) / field_size);
-        int column = static_cast<int>((tile->get_id()- field_size * field_size) % field_size);
+
+        int line = 0, column = 0;
+        if (number == 1) {
+            line = static_cast<int>((tile->get_id()) / field_size);
+            column = static_cast<int>((tile->get_id()) % field_size);
+        }
+        else {
+            line = static_cast<int>((tile->get_id() - field_size * field_size) / field_size);
+            column = static_cast<int>((tile->get_id() - field_size * field_size) % field_size);
+        }
 
         int delta_x = 0, delta_y = 0;
         switch (dir) {
@@ -250,7 +281,7 @@ void Game::check_click(sf::Vector2i _mouse_pos) {
         }
 
         for (int i = 0; i < len; i++) {
-            dead &= second_field.get_field()[line][column]->get_status() == Status::HURT;
+            dead &= field[line][column]->get_status() == Status::HURT;
             line += delta_y;
             column += delta_x;
         }
@@ -259,17 +290,17 @@ void Game::check_click(sf::Vector2i _mouse_pos) {
             for (int i = 0; i < len; i++) {
                 line -= delta_y;
                 column -= delta_x;
-                second_field.get_field()[line][column]->change_status(Status::DEAD);
+                field[line][column]->change_status(Status::DEAD);
             }
         }
     }
 }
 
-PauseTable::PauseTable() :  to_game(new Button("Back to game", {700.f, 300.f}, ViewMode::PLAY)), 
-                            exit(new Button("Defeat and quit", {700.f, 340.f}, ViewMode::EXIT)) {
+PauseTable::PauseTable() : to_game(new Button("Back to game", { 700.f, 300.f }, ViewMode::PLAY)),
+exit(new Button("Defeat and quit", { 700.f, 340.f }, ViewMode::EXIT)) {
     bg.setFillColor(sf::Color(203, 252, 255));
-    bg.setPosition({600.f, 250.f});
-    bg.setSize({500.f, 250.f});
+    bg.setPosition({ 600.f, 250.f });
+    bg.setSize({ 500.f, 250.f });
 
     to_game->get_text().setCharacterSize(30);
     exit->get_text().setCharacterSize(30);
