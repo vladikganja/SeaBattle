@@ -72,4 +72,5 @@ public:
     void check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field, 
                     std::vector<std::shared_ptr<Tile>>& ships, int number);
     bool check_win(std::vector<std::shared_ptr<Tile>>& ships);
+
 };
