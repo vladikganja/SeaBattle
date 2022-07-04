@@ -2,6 +2,7 @@
 #include "Field.h"
 #include "Utils.h"
 #include "ShipsGenerator.h"
+#include "AI.h"
 
 enum class GameState {
     SHIPREDACTOR,
@@ -44,6 +45,7 @@ private:
     sf::Text _1_deck_text;
 
     bool ship_are_placed;
+    bool click;
 
 public:
     Game(size_t field_size);
@@ -58,4 +60,6 @@ public:
 
     void check_event(sf::Event& event);
     void check_click(sf::Vector2i mouse_pos);
+    void check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field, 
+                    std::vector<std::shared_ptr<Tile>>& ships, int number);
 };
