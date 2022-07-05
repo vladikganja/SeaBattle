@@ -6,20 +6,20 @@
 
 enum class GameState {
     SHIPREDACTOR,
-    MAINLOOP,
-    GAMEOVER
+    MAINLOOP
 };
 
 class PauseTable {
 private:
     std::shared_ptr<Button> to_game;
     std::shared_ptr<Button> exit;
-    sf::RectangleShape bg;
     sf::Text pause_text;
+    sf::Text win_text;
     std::vector<std::shared_ptr<Button>> buttons;
 
 public:
     PauseTable();
+    void set_winner(const std::string& winner);
     void show(sf::RenderWindow& window);
     std::vector<std::shared_ptr<Button>> get_buttons() {
         return buttons;
@@ -32,20 +32,15 @@ private:
     Field second_field;
     ViewMode ShipRedactorLoop(sf::RenderWindow& window);
     ViewMode MainLoop(sf::RenderWindow& window);
-    ViewMode GameOverLoop(sf::RenderWindow& window);
 
     void render_game(sf::RenderWindow& window, GameState state);
 
-    bool pause;
+    static bool pause;
+    static char winner;
     PauseTable pause_table;
 
     std::shared_ptr<Button> random_placement;
     std::shared_ptr<Button> start;
-
-    sf::Text _4_deck_text;
-    sf::Text _3_deck_text;
-    sf::Text _2_deck_text;
-    sf::Text _1_deck_text;
 
     bool ship_are_placed;
     bool click;
@@ -63,10 +58,13 @@ public:
 
     ViewMode Run(sf::RenderWindow& window);
 
-    bool is_paused() {
+    static bool is_paused() {
         return pause;
     }
 
+    static char get_winner() {
+        return winner;
+    }
     void check_event(sf::Event& event);
     void check_click(sf::Vector2i mouse_pos);
     void check_dead(std::vector<std::vector<std::shared_ptr<Tile>>>& field, 

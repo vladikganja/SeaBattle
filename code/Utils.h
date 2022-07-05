@@ -10,13 +10,15 @@ enum class ViewMode {
     NONE = -1,
     EXIT = 0,
     PLAY = 1,
-    GAMEOVER = 2
+    MENU = 2,
+    GAMEOVER = 3
 };
 
 class Utils {
 public:
     static inline sf::Font font;
     static void init();
+    static bool block;
 };
 
 class Button {
