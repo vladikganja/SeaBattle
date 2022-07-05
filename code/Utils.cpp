@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+bool Utils::block = false;
+
 Button::Button(const std::string& str, const sf::Vector2f& pos, ViewMode _mode) {
     function = false;
     mode = _mode;

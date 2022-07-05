@@ -1,5 +1,8 @@
 #include "Game.h"
 
+bool Game::pause = false;
+char Game::winner = 0;
+
 Game::Game(size_t field_size) : random_placement(new Button("Random placement", { 900.f, 50.f }, ViewMode::NONE)),
 start(new Button("Drown them all!!!", { 900.f, 570.f }, ViewMode::PLAY)) {
     if (field_size < 10) {
@@ -20,32 +23,6 @@ start(new Button("Drown them all!!!", { 900.f, 570.f }, ViewMode::PLAY)) {
         button->get_text().setCharacterSize(60);
     }
 
-    _1_deck_text.setFont(Utils::font);
-    _2_deck_text.setFont(Utils::font);
-    _3_deck_text.setFont(Utils::font);
-    _4_deck_text.setFont(Utils::font);
-
-    _1_deck_text.setString("x4");
-    _2_deck_text.setString("x3");
-    _3_deck_text.setString("x2");
-    _4_deck_text.setString("x1");
-
-    _1_deck_text.setFillColor(Tile::RED);
-    _2_deck_text.setFillColor(Tile::RED);
-    _3_deck_text.setFillColor(Tile::RED);
-    _4_deck_text.setFillColor(Tile::RED);
-
-    _1_deck_text.setCharacterSize(60);
-    _2_deck_text.setCharacterSize(60);
-    _3_deck_text.setCharacterSize(60);
-    _4_deck_text.setCharacterSize(60);
-
-    _1_deck_text.setPosition({ 900.f, 410.f });
-    _2_deck_text.setPosition({ 900.f, 340.f });
-    _3_deck_text.setPosition({ 900.f, 270.f });
-    _4_deck_text.setPosition({ 900.f, 200.f });
-
-    pause = false;
     ship_are_placed = false;
     click = false;
     first_field.generate(field_size, false);
@@ -86,6 +63,14 @@ ViewMode Game::ShipRedactorLoop(sf::RenderWindow& window) {
         }
         else {
             to_return = Button::check_buttons(sf::Mouse::getPosition(window), pause_table.get_buttons());
+            if (pause_table.get_buttons()[0]->is_pressed()) {
+                pause = false;
+                click = true;
+                pause_table.get_buttons()[0]->turn_off();
+            }
+            if (pause_table.get_buttons()[1]->is_pressed()) {
+                Utils::block = true;
+            }
         }
 
         if (event.type == sf::Event::Closed)
@@ -127,30 +112,45 @@ ViewMode Game::MainLoop(sf::RenderWindow& window) {
             if (check_win(first_field.get_ships())) {
                 std::cout << "Player 2 wins!\n";
                 pause = true;
+                winner = 2;
+                pause_table.set_winner("Player 2");
             }
 
             if (check_win(second_field.get_ships())) {
                 std::cout << "Player 1 wins!\n";
                 pause = true;
+                winner = 1;
+                pause_table.set_winner("Player 1");
             }
         }
         else {
             to_return = Button::check_buttons(sf::Mouse::getPosition(window), pause_table.get_buttons());
+            if (pause_table.get_buttons()[0]->is_pressed()) {
+                pause = false;
+                click = true;
+                pause_table.get_buttons()[0]->turn_off();
+                if (winner != 0) {
+                    winner = 0;
+                    first_field.reset();
+                    second_field.reset();
+                    return ViewMode::NONE;
+                }
+            }
+            if (pause_table.get_buttons()[1]->is_pressed()) {
+                Utils::block = true;
+            }
         }
 
         if (event.type == sf::Event::Closed)
             to_return = ViewMode::EXIT;
 
-        check_event(event);
+        if (winner == 0)
+            check_event(event);
+
         render_game(window, GameState::MAINLOOP);
     }
 
     return to_return;
-}
-
-ViewMode Game::GameOverLoop(sf::RenderWindow& window) {
-    window;
-    return ViewMode();
 }
 
 void Game::render_game(sf::RenderWindow& window, GameState state) {
@@ -163,22 +163,10 @@ void Game::render_game(sf::RenderWindow& window, GameState state) {
         for (auto& button : buttons) {
             button->show(window);
         }
-
-        window.draw(_1_deck_text);
-        window.draw(_2_deck_text);
-        window.draw(_3_deck_text);
-        window.draw(_4_deck_text);
     }
     break;
 
     case GameState::MAINLOOP:
-    {
-        first_field.show(window);
-        second_field.show(window);
-    }
-    break;
-
-    case GameState::GAMEOVER:
     {
         first_field.show(window);
         second_field.show(window);
@@ -201,6 +189,8 @@ ViewMode Game::Run(sf::RenderWindow& window) {
 
     while (true) {
         AI::reset();
+        pause = false;
+        winner = 0;
 
         to_return = ShipRedactorLoop(window);
 
@@ -211,13 +201,8 @@ ViewMode Game::Run(sf::RenderWindow& window) {
 
         if (to_return != ViewMode::NONE)
             break;
-
-        to_return = GameOverLoop(window);
-
-        if (to_return != ViewMode::NONE)
-            break;
     }
-
+    
     return to_return;
 }
 
@@ -321,30 +306,38 @@ bool Game::check_win(std::vector<std::shared_ptr<Tile>>& ships) {
 
 // PAUSE TABLE ////////////////////////////////////////////////////////////////////////////////////
 
-PauseTable::PauseTable() : to_game(new Button("Back to game", { 700.f, 300.f }, ViewMode::PLAY)),
-exit(new Button("Defeat and quit", { 700.f, 340.f }, ViewMode::EXIT)) {
-    bg.setFillColor(Tile::GRAY);
-    bg.setPosition({ 500.f, 220.f });
-    bg.setSize({ 600.f, 280.f });
+PauseTable::PauseTable() : to_game(new Button("Back to game", { 800.f, 100.f }, ViewMode::NONE)),
+exit(new Button("Quit", { 800.f, 340.f }, ViewMode::MENU)) {
+    to_game->get_text().setCharacterSize(24);
+    to_game->set_size({160.f, 60.f});
+    to_game->get_rect().setPosition({720.f, 270.f});
+    to_game->get_text().setPosition({735.f, 283.f});
 
-    to_game->get_text().setCharacterSize(60);
-    to_game->set_size({560.f, 110.f});
-    to_game->get_rect().setPosition({520.f, 240.f});
-    to_game->get_text().setPosition({630.f, 250.f});
-
-    exit->get_text().setCharacterSize(60);
-    exit->set_size({ 560.f, 110.f });
-    exit->get_rect().setPosition({520.f, 370.f});
-    exit->get_text().setPosition({600.f, 380.f});
+    exit->get_text().setCharacterSize(24);
+    exit->set_size({ 160.f, 60.f });
+    exit->get_rect().setPosition({720.f, 390.f});
+    exit->get_text().setPosition({780.f, 403.f});
 
     buttons.push_back(to_game);
     buttons.push_back(exit);
+
+    win_text.setFont(Utils::font);
+    win_text.setCharacterSize(24);
+    win_text.setFillColor(sf::Color(255, 255, 255));
+    win_text.setOutlineThickness(1.f);
+    win_text.setPosition({730.f, 343.f});
+}
+
+void PauseTable::set_winner(const std::string& winner) {
+    win_text.setString(winner + " wins!");
 }
 
 void PauseTable::show(sf::RenderWindow& window) {
-    window.draw(bg);
     to_game->show(window);
     for (auto& button : buttons) {
         button->show(window);
+    }
+    if (Game::get_winner() != 0) {
+        window.draw(win_text);
     }
 }

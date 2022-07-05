@@ -12,7 +12,7 @@ int main() {
 
     while (mode != ViewMode::EXIT) {
         mode = menu.Run(*window);
-        size_t field_size = 10; // have to make slider
+        size_t field_size = 10;
         if (mode == ViewMode::PLAY) {
             Game game(field_size);
             mode = game.Run(*window);
